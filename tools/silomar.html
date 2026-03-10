@@ -25,7 +25,7 @@ font-weight:600;
 }
 
 .container{
-max-width:900px;
+max-width:1100px;
 margin:60px auto;
 background:white;
 padding:40px;
@@ -40,6 +40,30 @@ padding:12px 20px;
 color:white;
 border-radius:5px;
 cursor:pointer;
+}
+
+table{
+width:100%;
+margin-top:30px;
+border-collapse:collapse;
+}
+
+td,th{
+padding:10px;
+border-bottom:1px solid #ddd;
+}
+
+.matchExact{
+background:#d4edda;
+}
+
+.matchFuzzy{
+background:#ffe5b4;
+}
+
+.matchNone{
+background:#111;
+color:white;
 }
 
 </style>
@@ -57,35 +81,35 @@ Sistema Operativo Interno
 <h1>Extractor SILOMAR</h1>
 
 <input type="file" id="pdfFile"><br><br>
-
 <input type="file" id="excelFile"><br><br>
 
-<button onclick="procesar()">Procesar</button>
+<button id="procesarBtn">Procesar</button>
 
-<pre id="resultado"></pre>
+<div id="resultado"></div>
 
 </div>
 
 <script>
 
-let excelData = []
+let excelData=[]
 
-document.getElementById("excelFile").addEventListener("change", function(e){
+document.getElementById("excelFile").addEventListener("change",function(e){
 
-const file = e.target.files[0]
-const reader = new FileReader()
+const file=e.target.files[0]
 
-reader.onload = function(evt){
+const reader=new FileReader()
 
-const data = new Uint8Array(evt.target.result)
+reader.onload=function(evt){
 
-const workbook = XLSX.read(data,{type:'array'})
+const data=new Uint8Array(evt.target.result)
 
-const sheet = workbook.Sheets[workbook.SheetNames[0]]
+const workbook=XLSX.read(data,{type:'array'})
 
-excelData = XLSX.utils.sheet_to_json(sheet)
+const sheet=workbook.Sheets[workbook.SheetNames[0]]
 
-console.log("Excel cargado:",excelData)
+excelData=XLSX.utils.sheet_to_json(sheet)
+
+console.log("Excel cargado",excelData)
 
 }
 
@@ -93,33 +117,45 @@ reader.readAsArrayBuffer(file)
 
 })
 
+document.getElementById("procesarBtn").addEventListener("click",procesar)
 
-async function procesar(){
+function similarity(a,b){
 
-const resultado = document.getElementById("resultado")
+a=a.toLowerCase()
+b=b.toLowerCase()
 
-resultado.textContent = "Procesando PDF..."
+let longer=a.length>b.length?a:b
+let shorter=a.length>b.length?b:a
 
-const file = document.getElementById("pdfFile").files[0]
+let same=0
 
-if(!file){
+for(let i=0;i<shorter.length;i++){
+if(shorter[i]==longer[i]) same++
+}
 
-resultado.textContent="Debes subir un PDF"
-return
+return same/longer.length
 
 }
 
-const buffer = await file.arrayBuffer()
+async function procesar(){
 
-const pdf = await pdfjsLib.getDocument({data:buffer}).promise
+const resultado=document.getElementById("resultado")
 
-let items = []
+resultado.innerHTML="Procesando..."
+
+const file=document.getElementById("pdfFile").files[0]
+
+const buffer=await file.arrayBuffer()
+
+const pdf=await pdfjsLib.getDocument({data:buffer}).promise
+
+let items=[]
 
 for(let p=1;p<=pdf.numPages;p++){
 
-const page = await pdf.getPage(p)
+const page=await pdf.getPage(p)
 
-const content = await page.getTextContent()
+const content=await page.getTextContent()
 
 content.items.forEach(i=>{
 
@@ -133,12 +169,90 @@ y:i.transform[5]
 
 }
 
-console.log(items)
+const cpRegex=/\b\d{5}\b|\b\d{4}-\d{3}\b/
 
-resultado.textContent =
-"PDF procesado correctamente\n\nFragmentos detectados: "+items.length
+let filas=[]
+
+items.forEach(i=>{
+
+if(cpRegex.test(i.text)){
+
+filas.push({
+cp:i.text.match(cpRegex)[0],
+y:i.y
+})
 
 }
+
+})
+
+filas.sort((a,b)=>b.y-a.y)
+
+let tabla=[]
+
+filas.forEach(f=>{
+
+let rowItems=items.filter(i=>Math.abs(i.y-f.y)<8)
+
+rowItems.sort((a,b)=>a.x-b.x)
+
+let texto=rowItems.map(i=>i.text).join(" ")
+
+tabla.push({
+texto:texto,
+cp:f.cp
+})
+
+})
+
+let html="<table>"
+html+="<tr><th>Destino</th><th>CP</th><th>Tier</th></tr>"
+
+tabla.forEach(r=>{
+
+let matchType="matchNone"
+let tier="-"
+
+excelData.forEach(e=>{
+
+let nombre=e["DESTINATARIO"]||""
+let cpExcel=(e["CÓDIGO POSTAL Y LOCALIDAD"]||"").match(/\d{5}|\d{4}-\d{3}/)
+
+if(cpExcel) cpExcel=cpExcel[0]
+
+if(r.texto.includes(nombre) && r.cp==cpExcel){
+
+matchType="matchExact"
+tier=e["TIERS"]
+
+}else{
+
+let sim=similarity(r.texto,nombre)
+
+if(sim>0.6 && r.cp==cpExcel){
+
+matchType="matchFuzzy"
+tier=e["TIERS"]
+
+}
+
+}
+
+})
+
+html+=`
+<tr class="${matchType}">
+<td>${r.texto}</td>
+<td>${r.cp}</td>
+<td>${tier}</td>
+</tr>
+`
+
+})
+
+html+="</table>"
+
+resultado.innerHTML=html
 
 }
 
