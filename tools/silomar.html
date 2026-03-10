@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<meta charset="UTF-8">
+<title>Extractor SILOMAR</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+
+body{
+font-family:Segoe UI, Arial;
+margin:0;
+background:#f2f5f8;
+}
+
+.topbar{
+background:#0078c8;
+color:white;
+padding:15px 30px;
+font-size:20px;
+font-weight:600;
+}
+
+.container{
+max-width:900px;
+margin:60px auto;
+background:white;
+padding:40px;
+border-radius:6px;
+box-shadow:0 5px 20px rgba(0,0,0,0.1);
+}
+
+button{
+background:#0078c8;
+border:none;
+padding:12px 20px;
+color:white;
+border-radius:5px;
+cursor:pointer;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="topbar">
+Sistema Operativo Interno
+</div>
+
+<div class="container">
+
+<h1>Extractor SILOMAR</h1>
+
+<input type="file" id="pdfFile"><br><br>
+
+<input type="file" id="excelFile"><br><br>
+
+<button onclick="procesar()">Procesar</button>
+
+<pre id="resultado"></pre>
+
+</div>
+
+<script>
+
+async function procesar(){
+
+document.getElementById("resultado").textContent="Procesando..."
+
+}
+
+</script>
+
+</body>
+</html>
