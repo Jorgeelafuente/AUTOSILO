@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<meta charset="UTF-8">
+<title>Panel</title>
+
+<style>
+
+body{
+font-family:Segoe UI, Arial;
+margin:0;
+background:#f2f5f8;
+}
+
+.topbar{
+background:#0078c8;
+color:white;
+padding:15px 30px;
+font-size:20px;
+font-weight:600;
+box-shadow:0 2px 6px rgba(0,0,0,0.2);
+}
+
+.container{
+max-width:900px;
+margin:60px auto;
+background:white;
+padding:40px;
+border-radius:6px;
+box-shadow:0 5px 20px rgba(0,0,0,0.1);
+text-align:center;
+}
+
+h1{
+margin-top:0;
+color:#005a9e;
+}
+
+.menuButtons{
+display:flex;
+gap:20px;
+justify-content:center;
+margin-top:30px;
+}
+
+.button{
+background:#0078c8;
+border:none;
+padding:15px 30px;
+color:white;
+font-size:16px;
+font-weight:600;
+border-radius:5px;
+cursor:pointer;
+}
+
+.button:hover{
+background:#005a9e;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="topbar">
+Sistema Operativo Interno
+</div>
+
+<div class="container">
+
+<h1>Panel de Herramientas</h1>
+
+<div class="menuButtons">
+
+<button class="button" onclick="window.location.href='tools/silomar.html'">
+SILOMAR
+</button>
+
+</div>
+
+</div>
+
+<script src="assets/script.js"></script>
+
+</body>
+</html>
