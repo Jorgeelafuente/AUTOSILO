@@ -68,9 +68,77 @@ Sistema Operativo Interno
 
 <script>
 
+let excelData = []
+
+document.getElementById("excelFile").addEventListener("change", function(e){
+
+const file = e.target.files[0]
+const reader = new FileReader()
+
+reader.onload = function(evt){
+
+const data = new Uint8Array(evt.target.result)
+
+const workbook = XLSX.read(data,{type:'array'})
+
+const sheet = workbook.Sheets[workbook.SheetNames[0]]
+
+excelData = XLSX.utils.sheet_to_json(sheet)
+
+console.log("Excel cargado:",excelData)
+
+}
+
+reader.readAsArrayBuffer(file)
+
+})
+
+
 async function procesar(){
 
-document.getElementById("resultado").textContent="Procesando..."
+const resultado = document.getElementById("resultado")
+
+resultado.textContent = "Procesando PDF..."
+
+const file = document.getElementById("pdfFile").files[0]
+
+if(!file){
+
+resultado.textContent="Debes subir un PDF"
+return
+
+}
+
+const buffer = await file.arrayBuffer()
+
+const pdf = await pdfjsLib.getDocument({data:buffer}).promise
+
+let items = []
+
+for(let p=1;p<=pdf.numPages;p++){
+
+const page = await pdf.getPage(p)
+
+const content = await page.getTextContent()
+
+content.items.forEach(i=>{
+
+items.push({
+text:i.str,
+x:i.transform[4],
+y:i.transform[5]
+})
+
+})
+
+}
+
+console.log(items)
+
+resultado.textContent =
+"PDF procesado correctamente\n\nFragmentos detectados: "+items.length
+
+}
 
 }
 
