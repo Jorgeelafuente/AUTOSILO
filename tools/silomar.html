@@ -154,7 +154,6 @@ let items=[]
 for(let p=1;p<=pdf.numPages;p++){
 
 const page=await pdf.getPage(p)
-
 const content=await page.getTextContent()
 
 content.items.forEach(i=>{
@@ -166,6 +165,162 @@ y:i.transform[5]
 })
 
 })
+
+}
+
+const cpRegex=/\b\d{5}\b|\b\d{4}-\d{3}\b/
+
+let filas=[]
+
+items.forEach(i=>{
+
+if(cpRegex.test(i.text)){
+
+filas.push({
+cp:i.text.match(cpRegex)[0],
+y:i.y
+})
+
+}
+
+})
+
+filas.sort((a,b)=>b.y-a.y)
+
+let tabla=[]
+
+filas.forEach(f=>{
+
+let rowItems=items.filter(i=>Math.abs(i.y-f.y)<10)
+
+let row={
+destinatario:"",
+cp:"",
+pallets:"",
+bultos:"",
+kilos:"",
+obs1:"",
+obs2:""
+}
+
+rowItems.forEach(i=>{
+
+if(i.x<200){
+
+row.destinatario+=" "+i.text
+
+}else if(i.x<320){
+
+row.cp+=" "+i.text
+
+}else if(i.x<380){
+
+row.pallets+=" "+i.text
+
+}else if(i.x<450){
+
+row.bultos+=" "+i.text
+
+}else if(i.x<520){
+
+row.kilos+=" "+i.text
+
+}else if(i.x<650){
+
+row.obs1+=" "+i.text
+
+}else{
+
+row.obs2+=" "+i.text
+
+}
+
+})
+
+tabla.push(row)
+
+})
+
+function limpiarTexto(t){
+
+return t
+.toLowerCase()
+.normalize("NFD")
+.replace(/[\u0300-\u036f]/g,"")
+.replace(/s\.l\.|sl|s\.a\.|sa/g,"")
+.trim()
+
+}
+
+function fuzzyScore(a,b){
+
+a=limpiarTexto(a)
+b=limpiarTexto(b)
+
+let palabrasA=a.split(" ")
+let palabrasB=b.split(" ")
+
+let comunes=0
+
+palabrasA.forEach(p=>{
+if(palabrasB.includes(p)) comunes++
+})
+
+return comunes/palabrasA.length
+
+}
+
+let html="<table>"
+html+="<tr><th>Destino</th><th>CP</th><th>Pallets</th><th>Bultos</th><th>Kilos</th><th>Tier</th></tr>"
+
+tabla.forEach(r=>{
+
+let matchType="matchNone"
+let tier="-"
+
+excelData.forEach(e=>{
+
+let nombre=e["DESTINATARIO"]||""
+let cpExcel=(e["CÓDIGO POSTAL Y LOCALIDAD"]||"").match(/\d{5}|\d{4}-\d{3}/)
+
+if(cpExcel) cpExcel=cpExcel[0]
+
+if(limpiarTexto(r.destinatario).includes(limpiarTexto(nombre)) && r.cp.includes(cpExcel)){
+
+matchType="matchExact"
+tier=e["TIERS"]
+
+}else{
+
+let score=fuzzyScore(r.destinatario,nombre)
+
+if(score>0.5 && r.cp.includes(cpExcel)){
+
+matchType="matchFuzzy"
+tier=e["TIERS"]
+
+}
+
+}
+
+})
+
+html+=`
+<tr class="${matchType}">
+<td>${r.destinatario}</td>
+<td>${r.cp}</td>
+<td>${r.pallets}</td>
+<td>${r.bultos}</td>
+<td>${r.kilos}</td>
+<td>${tier}</td>
+</tr>
+`
+
+})
+
+html+="</table>"
+
+resultado.innerHTML=html
 
 }
 
